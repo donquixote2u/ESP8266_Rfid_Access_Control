@@ -5,24 +5,24 @@
  */ 
 // *** D7 = Rx = GPIO13
 // *** D8 =  DEBUG OUTPUT = GPIO15
-#define ALERT 0  // digital out pin for threshold alert = D3 = GPIO0
+#define SERVOLINE 0  // pwm out pin for door servo = D3 = GPIO0
 #define DELAY 100    // delay in millisecs between cap tests
 #define SensorRate 9600
 #define INDEX_SIZE 48 // buffer size set to 48 char 
 #define tag1 1402397
 #define tag2 13535691
 // #include <Wifi_Credentials.h>
+#include <Servo.h>  // esp8266 servo lib
 
 char rxbuffer[INDEX_SIZE] = {}; //  receive buffer
 unsigned long ID=0;                   // 
 int buffptr = 0; // position in circular buffer above
+Servo myservo;  // create servo object to control a servo
 
 void setup()                    
 {
    Serial.begin(SensorRate);
    Serial.swap();                 // reassign serial uart 0 to GPIO15,13
-   pinMode(ALERT,OUTPUT);         // pulled low if tag detected
-   digitalWrite(ALERT, HIGH);
 }
 
 void loop()                    
@@ -46,12 +46,24 @@ void loop()
    Serial.write('\n');  
    if(ID==tag1 || ID==tag2)  // if authoried tag detected, 
       {
-      digitalWrite(ALERT,LOW);
-      delay(200);
-      digitalWrite(ALERT,HIGH);
+      sweep();        // activate door servo
       Serial.print("tag read\n"); 
       }
    else { Serial.print("\nunidentified tag"); }   
    }
 delay(200);     
 }
+void sweep() {
+    int pos;
+   myservo.attach(SERVOLINE);  // attaches the servo to pwm line
+  for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+  for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+     myservo.detach();  // attaches the servo to pwm line
+  }
