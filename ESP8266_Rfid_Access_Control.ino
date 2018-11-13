@@ -10,7 +10,7 @@
 #define SensorRate 9600
 #define INDEX_SIZE 48 // buffer size set to 48 char 
 #define tag1 1402397
-#define tag2 2
+#define tag2 13535691
 // #include <Wifi_Credentials.h>
 #include <SoftwareSerial.h>
 SoftwareSerial RFin(RX1,TX1);
@@ -52,8 +52,7 @@ void loop()
       digitalWrite(ALERT,LOW);
       delay(200);
       digitalWrite(ALERT,HIGH);
-      if(ID==tag1)
-        { RFin.print("tag1 read\n"); }
+      RFin.print("tag read\n"); 
       }
    }
 delay(200);     
