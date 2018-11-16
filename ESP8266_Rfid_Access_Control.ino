@@ -18,11 +18,14 @@ char rxbuffer[INDEX_SIZE] = {}; //  receive buffer
 unsigned long ID=0;                   // 
 int buffptr = 0; // position in circular buffer above
 Servo myservo;  // create servo object to control a servo
+int pos;       // desired position of servo
 
 void setup()                    
 {
    Serial.begin(SensorRate);
    Serial.swap();                 // reassign serial uart 0 to GPIO15,13
+   pos=0;
+   doorlatch(pos);              // home servo
 }
 
 void loop()                    
@@ -46,24 +49,17 @@ void loop()
    Serial.write('\n');  
    if(ID==tag1 || ID==tag2)  // if authoried tag detected, 
       {
-      sweep();        // activate door servo
+      pos=90;
+      doorlatch(pos);        // activate door servo
       Serial.print("tag read\n"); 
       }
    else { Serial.print("\nunidentified tag"); }   
    }
 delay(200);     
 }
-void sweep() {
-    int pos;
-   myservo.attach(SERVOLINE);  // attaches the servo to pwm line
-  for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
-    // in steps of 1 degree
+void doorlatch(pos) {
+    myservo.attach(SERVOLINE);  // attaches the servo to pwm line
     myservo.write(pos);              // tell servo to go to position in variable 'pos'
-    delay(15);                       // waits 15ms for the servo to reach the position
-  }
-  for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
-    myservo.write(pos);              // tell servo to go to position in variable 'pos'
-    delay(15);                       // waits 15ms for the servo to reach the position
-  }
-     myservo.detach();  // attaches the servo to pwm line
+    delay(100);                       // waits 100ms for the servo to reach the position
+    myservo.detach();                 // detach pwm line
   }
