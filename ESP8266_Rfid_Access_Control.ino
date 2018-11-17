@@ -3,9 +3,11 @@
  * ESP8266 uses D7,D8  for rf reader alt serial port rx and debug tx, 
  *  and D3 for digital LOW alert
  */ 
-// *** D7 = Rx = GPIO13
-// *** D8 =  DEBUG OUTPUT = GPIO15
+//  D7 = Rx = GPIO13
+//  D8 =  DEBUG OUTPUT = GPIO15
 #define SERVOLINE 0  // pwm out pin for door servo = D3 = GPIO0
+#define LED 4        // D2 = Alert LED; on = LOW
+#define SENSEPIN 5   // D1 = Hall Effect Sensor (active LOW)
 #define DELAY 100    // delay in millisecs between cap tests
 #define SensorRate 9600
 #define INDEX_SIZE 48 // buffer size set to 48 char 
@@ -18,10 +20,14 @@ char rxbuffer[INDEX_SIZE] = {}; //  receive buffer
 unsigned long ID=0;                   // 
 int buffptr = 0; // position in circular buffer above
 Servo myservo;  // create servo object to control a servo
-int pos;       // desired position of servo
-
+int pos;        // desired position of servo
+int DoorState, lastDoorState;  // state of Hall effect sensor on door
 void setup()                    
 {
+   pinMode(SENSEPIN, INPUT); 
+   DoorState = HIGH;
+   lastDoorState = DoorState;       // init door state change = same = NO
+   pinMode(LED, OUTPUT);
    Serial.begin(SensorRate);
    Serial.swap();                 // reassign serial uart 0 to GPIO15,13
    pos=0;
@@ -30,6 +36,17 @@ void setup()
 
 void loop()                    
 {
+ DoorState = digitalRead(SENSEPIN);
+   if (DoorState != lastDoorState) {
+   // if the state has changed and change is to LOW turn LED on
+     if (DoorState == LOW) {
+        digitalWrite(LED, LOW);    // turn LED ON
+        }
+     else { digitalWrite(LED, HIGH);    // turn LED OFF
+        }
+     lastDoorState=DoorState;        // store latest door state   
+    }        
+ 
  if(Serial.available()>0)
    {
    buffptr=0; ID=0;
@@ -47,8 +64,9 @@ void loop()
    Serial.write('-'); 
    Serial.print(ID,DEC);
    Serial.write('\n');  
-   if(ID==tag1 || ID==tag2)  // if authoried tag detected, 
+   if(ID==tag1 || ID==tag2)  // if authorised tag detected, 
       {
+  
       pos=90;
       doorlatch(pos);        // activate door servo
       Serial.print("tag read\n"); 
@@ -57,7 +75,7 @@ void loop()
    }
 delay(200);     
 }
-void doorlatch(pos) {
+void doorlatch(int pos) {
     myservo.attach(SERVOLINE);  // attaches the servo to pwm line
     myservo.write(pos);              // tell servo to go to position in variable 'pos'
     delay(100);                       // waits 100ms for the servo to reach the position
