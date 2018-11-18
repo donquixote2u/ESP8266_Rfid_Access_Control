@@ -38,11 +38,16 @@ void loop()
 {
  DoorState = digitalRead(SENSEPIN);
    if (DoorState != lastDoorState) {
+    Serial.print("\nDoor state change:"); 
    // if the state has changed and change is to LOW turn LED on
      if (DoorState == LOW) {
         digitalWrite(LED, LOW);    // turn LED ON
+        pos=200; doorlatch(pos);             //if door clowsed, ensure latch also closed
+        Serial.print("Door closed"); 
         }
      else { digitalWrite(LED, HIGH);    // turn LED OFF
+     pos=0; doorlatch(pos);             //if door open, ensure latch also open
+     Serial.print("Door open"); 
         }
      lastDoorState=DoorState;        // store latest door state   
     }        
@@ -66,10 +71,9 @@ void loop()
    Serial.write('\n');  
    if(ID==tag1 || ID==tag2)  // if authorised tag detected, 
       {
-  
-      pos=90;
+      pos=0;
       doorlatch(pos);        // activate door servo
-      Serial.print("tag read\n"); 
+      Serial.print("tag read\n");
       }
    else { Serial.print("\nunidentified tag"); }   
    }
