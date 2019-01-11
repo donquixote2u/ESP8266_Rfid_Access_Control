@@ -1,12 +1,11 @@
 /* if RF reader detects an authorised tag, fire door control solenoid
  *  RF reader outputs ID of tag read onto serial port
  * ESP8266 uses D7,D8  for rf reader alt serial port rx and debug tx, 
- *  and D3 for digital LOW alert
+ *  D1 for Hall effect door state sensor, and D3 for servo control
  */ 
 //  D7 = Rx = GPIO13
 //  D8 =  DEBUG OUTPUT = GPIO15
 #define SERVOLINE 0  // pwm out pin for door servo = D3 = GPIO0
-#define LED 4        // D2 = Alert LED; on = LOW
 #define SENSEPIN 5   // D1 = Hall Effect Sensor (active LOW)
 #define DELAY 100    // delay in millisecs between cap tests
 #define SensorRate 9600
@@ -27,7 +26,6 @@ void setup()
    pinMode(SENSEPIN, INPUT); 
    DoorState = HIGH;
    lastDoorState = DoorState;       // init door state change = same = NO
-   pinMode(LED, OUTPUT);
    Serial.begin(SensorRate);
    Serial.swap();                 // reassign serial uart 0 to GPIO15,13
    pos=0;
@@ -39,13 +37,12 @@ void loop()
  DoorState = digitalRead(SENSEPIN);
    if (DoorState != lastDoorState) {
     Serial.print("\nDoor state change:"); 
-   // if the state has changed and change is to LOW turn LED on
-     if (DoorState == LOW) {
-        digitalWrite(LED, LOW);    // turn LED ON
+   // if the state has changed and change is to LOW door is closed
+   if (DoorState == LOW) {
         pos=200; doorlatch(pos);             //if door clowsed, ensure latch also closed
         Serial.print("Door closed"); 
         }
-     else { digitalWrite(LED, HIGH);    // turn LED OFF
+     else { 
      pos=0; doorlatch(pos);             //if door open, ensure latch also open
      Serial.print("Door open"); 
         }
