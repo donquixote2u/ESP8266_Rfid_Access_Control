@@ -12,15 +12,23 @@
 #define INDEX_SIZE 48 // buffer size set to 48 char 
 #define tag1 1402397
 #define tag2 13535691
-// #include <Wifi_Credentials.h>
+#include <Arduino.h>
+#include <ESP8266WiFiMulti.h>
+#include <ESP8266HTTPClient.h>
+#include <Wifi_Credentials.h>
+#include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
 #include <Servo.h>  // esp8266 servo lib
 
 char rxbuffer[INDEX_SIZE] = {}; //  receive buffer
 unsigned long ID=0;                   // 
 int buffptr = 0; // position in circular buffer above
+ESP8266WiFiMulti WiFiMulti;
 Servo myservo;  // create servo object to control a servo
 int pos;        // desired position of servo
 int DoorState, lastDoorState;  // state of Hall effect sensor on door
+
 void setup()                    
 {
    pinMode(SENSEPIN, INPUT); 
@@ -30,10 +38,49 @@ void setup()
    Serial.swap();                 // reassign serial uart 0 to GPIO15,13
    pos=0;
    doorlatch(pos);              // home servo
+   WiFi.mode(WIFI_STA);
+   WiFiMulti.addAP(WIFI_SSID, WIFI_PASSWORD);
+
+  ArduinoOTA.onStart([]() {
+    String type;
+    if (ArduinoOTA.getCommand() == U_FLASH) {
+      type = "sketch";
+    } else { // U_SPIFFS
+      type = "filesystem";
+    }
+
+    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+    Serial.println("Start updating " + type);
+  });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nEnd");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) {
+      Serial.println("Auth Failed");
+    } else if (error == OTA_BEGIN_ERROR) {
+      Serial.println("Begin Failed");
+    } else if (error == OTA_CONNECT_ERROR) {
+      Serial.println("Connect Failed");
+    } else if (error == OTA_RECEIVE_ERROR) {
+      Serial.println("Receive Failed");
+    } else if (error == OTA_END_ERROR) {
+      Serial.println("End Failed");
+    }
+  });
+  ArduinoOTA.begin();
+  Serial.println("Ready");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());   
 }
 
 void loop()                    
 {
+ ArduinoOTA.handle(); 
  DoorState = digitalRead(SENSEPIN);
    if (DoorState != lastDoorState) {
     Serial.print("\nDoor state change:"); 
@@ -45,6 +92,18 @@ void loop()
      else { 
      pos=0; doorlatch(pos);             //if door open, ensure latch also open
      Serial.print("Door open"); 
+      if ((WiFiMulti.run() == WL_CONNECTED)) {
+        HTTPClient http;
+        http.begin("http://35.184.205.108/Debug/Showdiags.php?Catalert=Y"); //HTTP
+        int httpCode = http.GET();
+        if ((httpCode > 0) && (httpCode == HTTP_CODE_OK)) {
+              Serial.print(": alert sent");
+          }
+          else {
+      Serial.print("[HTTP] GET... failed, error: ");
+      Serial.print(http.errorToString(httpCode).c_str());
+          }
+      }
         }
      lastDoorState=DoorState;        // store latest door state   
     }        
