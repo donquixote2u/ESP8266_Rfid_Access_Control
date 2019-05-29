@@ -94,7 +94,8 @@ void loop()
      Serial.print("Door open"); 
       if ((WiFiMulti.run() == WL_CONNECTED)) {
         HTTPClient http;
-        http.begin("http://35.184.205.108/Debug/Showdiags.php?Catalert=Y"); //HTTP
+        // http.begin("http://35.184.205.108/Debug/Showdiags.php?Catalert=Y"); //HTTP
+        http.begin("http://192.168.0.111/?message=Cat_Door_Open");
         int httpCode = http.GET();
         if ((httpCode > 0) && (httpCode == HTTP_CODE_OK)) {
               Serial.print(": alert sent");
